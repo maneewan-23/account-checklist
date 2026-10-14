@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#df4388"><meta name="description" content="แอปเช็กลิสต์งานบัญชี">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="styles.css">
+<title>เช็กลิสต์งานบัญชี</title>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="brand-icon">✓</div><div><strong data-i18n="appName">เช็กลิสต์งานบัญชี</strong><small data-i18n="tagline">จัดการงานอย่างเป็นระบบ</small></div></div>
+  <div class="top-actions"><select id="language" aria-label="Language"><option value="th">ไทย</option><option value="en">English</option><option value="zh">简体中文</option></select><button class="icon-btn" id="installBtn" hidden data-i18n="install">ติดตั้งแอป</button></div>
+</header>
+<div class="layout">
+<aside class="sidebar">
+  <button class="nav active" data-view="dashboard">▦ <span data-i18n="dashboard">ภาพรวม</span></button>
+  <button class="nav" data-view="tasks">☷ <span data-i18n="allTasks">งานทั้งหมด</span></button>
+  <button class="nav" data-view="pending">◷ <span data-i18n="pending">รอดำเนินการ</span></button>
+  <button class="nav" data-view="doing">↻ <span data-i18n="doing">กำลังทำ</span></button>
+  <button class="nav" data-view="done">✓ <span data-i18n="done">เสร็จแล้ว</span></button>
+  <button class="nav" data-view="archive">▤ <span data-i18n="archive">คลังประวัติ</span></button>
+  <button class="nav" data-view="reports">⇩ <span data-i18n="reports">ส่งออกรายงาน</span></button>
+  <button class="nav" data-view="settings">⚙ <span data-i18n="settings">ตั้งค่า</span></button>
+  <div class="sidebar-note"><span class="dot"></span><span data-i18n="localNote">รุ่นทดลอง: บันทึกในอุปกรณ์นี้</span></div>
+</aside>
+<main>
+<section id="dashboardView" class="view">
+  <div class="page-heading"><div><p class="eyebrow" data-i18n="workspace">พื้นที่ทำงานส่วนตัว</p><h1 data-i18n="dashboard">ภาพรวม</h1><p class="muted" data-i18n="overviewDesc">ติดตามงานบัญชีและกำหนดส่งในที่เดียว</p></div><button class="primary" id="newTaskTop">＋ <span data-i18n="addTask">เพิ่มงาน</span></button></div>
+  <div class="stats">
+    <article class="stat pink"><span data-i18n="pending">รอดำเนินการ</span><b id="pendingCount">0</b><small data-i18n="tasks">งาน</small></article>
+    <article class="stat amber"><span data-i18n="doing">กำลังทำ</span><b id="doingCount">0</b><small data-i18n="tasks">งาน</small></article>
+    <article class="stat green"><span data-i18n="done">เสร็จแล้ว</span><b id="doneCount">0</b><small data-i18n="tasks">งาน</small></article>
+    <article class="stat purple"><span data-i18n="overdue">เกินกำหนด</span><b id="overdueCount">0</b><small data-i18n="tasks">งาน</small></article>
+  </div>
+  <div class="panel"><div class="panel-heading"><div><h2 data-i18n="upcoming">งานที่ต้องติดตาม</h2><p class="muted" data-i18n="upcomingDesc">งานที่ยังไม่เสร็จและใกล้ถึงกำหนด</p></div><button class="text-btn" id="seeAll" data-i18n="seeAll">ดูงานทั้งหมด →</button></div><div id="upcomingList" class="task-list"></div></div>
+</section>
+<section id="tasksView" class="view hidden">
+ <div class="page-heading"><div><p class="eyebrow" data-i18n="workspace">พื้นที่ทำงานส่วนตัว</p><h1 id="taskPageTitle" data-i18n="allTasks">งานทั้งหมด</h1></div><button class="primary" id="newTask">＋ <span data-i18n="addTask">เพิ่มงาน</span></button></div>
+ <div class="toolbar"><input id="search" placeholder="ค้นหาชื่องาน หมายเหตุ หรือหมวดหมู่…" data-i18n-placeholder="searchPlaceholder"><select id="statusFilter" aria-label="Status"><option value="all" data-i18n="allStatuses">ทุกสถานะ</option><option value="pending" data-i18n="pending">รอดำเนินการ</option><option value="doing" data-i18n="doing">กำลังทำ</option><option value="done" data-i18n="done">เสร็จแล้ว</option></select><select id="categoryFilter" aria-label="Category"><option value="all" data-i18n="allCategories">ทุกหมวดหมู่</option><option>ภาษี</option><option>บัญชี</option><option>เงินเดือน</option><option>เอกสาร</option><option>อื่นๆ</option></select></div>
+ <div id="taskList" class="task-list"></div>
+</section>
+<section id="archiveView" class="view hidden">
+ <div class="page-heading"><div><p class="eyebrow" data-i18n="history">ประวัติย้อนหลัง</p><h1 data-i18n="archive">คลังประวัติ</h1><p class="muted" data-i18n="archiveDesc">งานที่เสร็จแล้วจะยังเก็บไว้ ไม่ลบอัตโนมัติ</p></div></div><div id="archiveList" class="task-list"></div>
+</section>
+<section id="reportsView" class="view hidden">
+ <div class="page-heading"><div><p class="eyebrow" data-i18n="reports">ส่งออกรายงาน</p><h1 data-i18n="reportTitle">รายงานสรุปงาน</h1><p class="muted" data-i18n="reportDesc">ส่งออกงานแยกตามสถานะ พร้อมหัวข้อรายงานตามภาษาที่เลือก</p></div></div>
+ <div class="stats compact"><article class="stat pink"><span data-i18n="pending">รอดำเนินการ</span><b id="rpPending">0</b></article><article class="stat amber"><span data-i18n="doing">กำลังทำ</span><b id="rpDoing">0</b></article><article class="stat green"><span data-i18n="done">เสร็จแล้ว</span><b id="rpDone">0</b></article><article class="stat purple"><span data-i18n="total">รวมทั้งหมด</span><b id="rpTotal">0</b></article></div>
+ <div class="panel"><h2 data-i18n="chooseExport">เลือกรูปแบบไฟล์</h2><p class="muted" data-i18n="exportNote">CSV เปิดด้วย Excel ได้ ส่วน PDF ใช้หน้าต่างพิมพ์ของอุปกรณ์เพื่อบันทึกเป็น PDF</p><div class="export-actions"><button class="primary" id="exportCsv">⇩ Excel / CSV</button><button class="secondary" id="exportPdf">▧ PDF / พิมพ์</button></div><div class="field"><label data-i18n="exportScope">สถานะที่ต้องการส่งออก</label><div class="checks"><label><input type="checkbox" class="export-status" value="pending" checked> <span data-i18n="pending">รอดำเนินการ</span></label><label><input type="checkbox" class="export-status" value="doing" checked> <span data-i18n="doing">กำลังทำ</span></label><label><input type="checkbox" class="export-status" value="done" checked> <span data-i18n="done">เสร็จแล้ว</span></label></div></div></div>
+</section>
+<section id="settingsView" class="view hidden">
+ <div class="page-heading"><div><p class="eyebrow" data-i18n="personalize">ปรับแต่งตามต้องการ</p><h1 data-i18n="settings">ตั้งค่า</h1></div></div>
+ <div class="settings-grid">
+  <div class="panel"><h2 data-i18n="languageSettings">ภาษา</h2><p class="muted" data-i18n="languageDesc">เปลี่ยนภาษาเมนูและหัวข้อรายงาน</p><select id="language2"><option value="th">ภาษาไทย</option><option value="en">English</option><option value="zh">简体中文</option></select><p class="hint" data-i18n="translationNote">ข้อความที่พิมพ์เองจะไม่ถูกแปลโดยอัตโนมัติในรุ่นทดลองนี้</p></div>
+  <div class="panel"><h2 data-i18n="themeSettings">ธีมสีของฉัน</h2><label data-i18n="themeName">ชื่อธีม</label><input id="themeName" value="ธีมของฉัน"><div class="color-field"><label data-i18n="primaryColor">สีหลัก</label><input type="color" id="primaryColor" value="#df4388"></div><div class="color-field"><label data-i18n="backgroundColor">สีพื้นหลัง</label><input type="color" id="backgroundColor" value="#fff7fb"></div><div class="color-field"><label data-i18n="buttonColor">สีปุ่ม</label><input type="color" id="buttonColor" value="#c92f77"></div><div class="color-field"><label data-i18n="textColor">สีตัวอักษร</label><input type="color" id="textColor" value="#352832"></div><button class="primary full" id="saveTheme" data-i18n="saveTheme">บันทึกธีม</button></div>
+  <div class="panel"><h2 data-i18n="typography">ฟอนต์และขนาดตัวอักษร</h2><label data-i18n="font">ฟอนต์</label><select id="fontSelect"><option value="system">ฟอนต์มาตรฐาน</option><option value="Sarabun">Sarabun</option><option value="Noto Sans Thai">Noto Sans Thai</option></select><label data-i18n="fontSize">ขนาดตัวอักษร</label><div class="range-row"><input type="range" id="fontSize" min="13" max="21" value="16"><b id="fontSizeValue">16 px</b></div><button class="secondary full" id="resetTheme" data-i18n="resetTheme">คืนค่าธีมเริ่มต้น</button></div>
+  <div class="panel"><h2 data-i18n="reminderSettings">ตั้งเวลาแจ้งเตือน</h2><p class="muted" data-i18n="reminderDesc">กรอกจำนวนวันล่วงหน้าและเวลาเอง</p><div id="reminderRows"></div><button class="secondary full" id="addReminder" data-i18n="addReminder">＋ เพิ่มเวลาแจ้งเตือน</button><p class="hint" data-i18n="reminderLocalNote">รุ่นทดลองนี้ยังไม่ส่งการแจ้งเตือนจริง</p></div>
+  <div class="panel"><h2 data-i18n="dataTools">ข้อมูลและความปลอดภัย</h2><p class="muted" data-i18n="dataDesc">สำรองข้อมูลไปยังไฟล์ JSON เพื่อเก็บหรือย้ายเครื่อง</p><div class="export-actions"><button class="secondary" id="backupData" data-i18n="backup">สำรองข้อมูล</button><label class="upload-btn">นำเข้าข้อมูล<input type="file" id="restoreData" accept=".json,application/json" hidden></label></div><button class="danger full" id="clearData" data-i18n="clearData">ลบข้อมูลงานทั้งหมด</button><p class="hint" data-i18n="localStorageNote">ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น ยังไม่ซิงก์ข้ามอุปกรณ์</p></div>
+ </div>
+</section>
+<section id="editorView" class="view hidden">
+ <div class="page-heading"><div><p class="eyebrow" data-i18n="taskDetails">รายละเอียดงาน</p><h1 id="editorTitle" data-i18n="addTask">เพิ่มงาน</h1></div><button class="secondary" id="cancelEdit" data-i18n="cancel">ยกเลิก</button></div>
+ <form id="taskForm" class="panel form-grid">
+  <input type="hidden" id="taskId">
+  <div class="field"><label for="taskName" data-i18n="taskName">ชื่องาน *</label><input id="taskName" required maxlength="160" placeholder="เช่น ยื่นภาษีประจำเดือน"></div>
+  <div class="field"><label for="taskCategory" data-i18n="category">หมวดหมู่</label><select id="taskCategory"><option>ภาษี</option><option>บัญชี</option><option>เงินเดือน</option><option>เอกสาร</option><option>อื่นๆ</option></select></div>
+  <div class="field"><label for="taskDue" data-i18n="dueDate">วันและเวลาครบกำหนด</label><input id="taskDue" type="datetime-local"></div>
+  <div class="field"><label for="taskPriority" data-i18n="priority">ความสำคัญ</label><select id="taskPriority"><option value="normal" data-i18n="normal">ปกติ</option><option value="high" data-i18n="high">สำคัญ</option><option value="low" data-i18n="low">ต่ำ</option></select></div>
+  <div class="field full-span"><label for="taskNotes" data-i18n="notes">หมายเหตุ / รายละเอียด</label><textarea id="taskNotes" rows="4" maxlength="5000" placeholder="รายละเอียดที่ต้องจำ..."></textarea></div>
+  <div class="field full-span"><label for="taskFiles" data-i18n="attachments">ไฟล์แนบ</label><input id="taskFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><p class="hint" data-i18n="attachmentNote">ไฟล์แนบจะอยู่ในหน่วยความจำของเบราว์เซอร์ รุ่นทดลองเหมาะกับไฟล์ขนาดเล็ก</p><div id="existingFiles" class="file-list"></div></div>
+  <div class="field full-span"><label for="taskStatus" data-i18n="status">สถานะ</label><select id="taskStatus"><option value="pending" data-i18n="pending">รอดำเนินการ</option><option value="doing" data-i18n="doing">กำลังทำ</option><option value="done" data-i18n="done">เสร็จแล้ว</option></select></div>
+  <div class="form-actions full-span"><button class="primary" type="submit" data-i18n="saveTask">บันทึกงาน</button><button class="secondary" type="button" id="cancelEdit2" data-i18n="cancel">ยกเลิก</button></div>
+ </form>
+</section>
+</main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body></html>
