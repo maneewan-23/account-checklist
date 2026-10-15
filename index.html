@@ -11,7 +11,20 @@
   <div class="brand"><div class="brand-icon">✓</div><div><strong data-i18n="appName">เช็กลิสต์งานบัญชี</strong><small data-i18n="tagline">จัดการงานอย่างเป็นระบบ</small></div></div>
   <div class="top-actions"><select id="language" aria-label="Language"><option value="th">ไทย</option><option value="en">English</option><option value="zh">简体中文</option></select><button class="icon-btn" id="installBtn" hidden data-i18n="install">ติดตั้งแอป</button></div>
 </header>
-<div class="layout">
+<section id="authPanel" class="panel" style="max-width:520px;margin:32px auto;padding:24px;display:none">
+  <h1>เข้าสู่ระบบเช็กลิสต์งานบัญชี</h1>
+  <p class="muted">เข้าสู่ระบบด้วยบัญชีเดียวกันเพื่อซิงก์งานระหว่างอุปกรณ์</p>
+  <form id="authForm" class="form-grid">
+    <div class="field full-span"><label for="authEmail">อีเมล</label><input id="authEmail" type="email" autocomplete="username" required></div>
+    <div class="field full-span"><label for="authPassword">รหัสผ่าน</label><input id="authPassword" type="password" autocomplete="current-password" required></div>
+    <div class="form-actions full-span"><button class="primary" id="signInBtn" type="submit">เข้าสู่ระบบ</button><button class="secondary" id="signUpBtn" type="button">สมัครบัญชี</button></div>
+    <p id="authMessage" class="hint full-span" aria-live="polite"></p>
+  </form>
+</section>
+<div id="accountBar" style="display:none;max-width:1200px;margin:10px auto;padding:0 16px;align-items:center;justify-content:flex-end;gap:12px">
+  <span id="accountEmail" class="muted"></span><button id="signOutBtn" class="secondary" type="button">ออกจากระบบ</button>
+</div>
+<div class="layout" id="appLayout" style="display:none">
 <aside class="sidebar">
   <button class="nav active" data-view="dashboard">▦ <span data-i18n="dashboard">ภาพรวม</span></button>
   <button class="nav" data-view="tasks">☷ <span data-i18n="allTasks">งานทั้งหมด</span></button>
@@ -74,5 +87,7 @@
 </main>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body></html>

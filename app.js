@@ -7,10 +7,57 @@ en:{appName:"Accounting Checklist",tagline:"Keep your work organized",install:"I
 zh:{appName:"会计任务清单",tagline:"有条理地管理工作",install:"安装应用",dashboard:"概览",allTasks:"全部任务",pending:"待处理",doing:"进行中",done:"已完成",archive:"任务档案",reports:"导出报表",settings:"设置",localNote:"演示版：数据保存在本设备",workspace:"个人工作区",overviewDesc:"集中跟踪会计任务和截止日期",addTask:"新增任务",tasks:"项任务",overdue:"已逾期",upcoming:"待跟进任务",upcomingDesc:"尚未完成且临近截止日期的任务",seeAll:"查看全部 →",searchPlaceholder:"搜索任务、备注或类别…",allStatuses:"全部状态",allCategories:"全部类别",history:"历史记录",archiveDesc:"已完成的任务会保留，不会自动删除",reportTitle:"任务汇总报表",reportDesc:"按状态导出任务，并使用当前所选语言显示标题",total:"总计",chooseExport:"选择导出格式",exportNote:"CSV 文件可用 Excel 打开；PDF 请在设备打印窗口中保存。",exportScope:"要导出的状态",personalize:"个性化设置",languageSettings:"语言",languageDesc:"更改界面和报表标题语言",translationNote:"此演示版不会自动翻译用户输入的任务内容",themeSettings:"我的主题",themeName:"主题名称",primaryColor:"主色",backgroundColor:"背景颜色",buttonColor:"按钮颜色",textColor:"文字颜色",saveTheme:"保存主题",typography:"字体和字号",font:"字体",fontSize:"字号",resetTheme:"恢复默认主题",reminderSettings:"提醒时间",reminderDesc:"自行输入提前天数和时间",addReminder:"＋ 添加提醒",reminderLocalNote:"演示版尚未启用实际通知",dataTools:"数据与安全",dataDesc:"将数据备份为 JSON 文件",backup:"备份数据",clearData:"删除全部任务",localStorageNote:"数据仅保存在此浏览器中，不会跨设备同步",taskDetails:"任务详情",cancel:"取消",taskName:"任务名称 *",category:"类别",dueDate:"截止日期和时间",priority:"优先级",normal:"普通",high:"重要",low:"低",notes:"备注 / 详情",attachments:"附件",attachmentNote:"文件保存在浏览器中；演示版建议使用较小文件",status:"状态",saveTask:"保存任务",edit:"编辑",delete:"删除",markDone:"标记完成",restore:"恢复",due:"截止时间",created:"创建时间",completedAt:"完成时间",noTasks:"暂无任务，请添加第一项任务",confirmDelete:"确定删除此任务吗？应用中无法撤销。",confirmClear:"确定删除所有任务吗？建议先备份。",saved:"任务已保存",deleted:"任务已删除",themeSaved:"主题已保存",backupDone:"备份文件已下载",restoreDone:"数据已导入",invalidBackup:"备份文件无效",all:"全部",remove:"删除",reminderDays:"提前天数",reminderTime:"时间",noDue:"未设置截止日期",categoryLabel:"类别",priorityLabel:"优先级",attachmentCount:"个附件",reportTitleShort:"会计任务汇总",generated:"报表生成时间",printTip:"请在打印窗口中选择“另存为 PDF”",exported:"报表已准备好",translationUnavailable:"翻译任务内容需要连接翻译服务。此演示版仅翻译界面文字。",invalidTime:"请输入 HH:MM 格式的时间",emptyExport:"请至少选择一个状态",fileTooLarge:"文件过大（演示版每个文件限 2 MB）",noFiles:"没有附件",confirmRestore:"使用备份数据替换当前任务吗？",taskUpdated:"任务已更新",taskAdded:"任务已新增"}};
 let lang="th",tasks=[],settings={themeName:"ธีมของฉัน",primary:"#df4388",background:"#fff7fb",button:"#c92f77",text:"#352832",font:"system",fontSize:16,reminders:[{days:5,time:"08:30"},{days:3,time:"13:00"},{days:1,time:"17:00"}]};
 let deferredPrompt=null, editingFiles=[];
+let sb=null, currentUser=null, syncReady=false, knownRemoteIds=new Set(), syncQueue=Promise.resolve();
+function authMessage(msg){const el=$("authMessage");if(el)el.textContent=msg}
+function showAuth(show){$("authPanel").style.display=show?"block":"none";$("appLayout").style.display=show?"none":"";$("accountBar").style.display=show?"none":"flex"}
+function configured(){return window.SUPABASE_URL && window.SUPABASE_ANON_KEY && !window.SUPABASE_URL.includes("ใส่_") && !window.SUPABASE_ANON_KEY.includes("ใส่_")}
+function remoteRow(x){const due=x.due||"";const {files,...taskData}=x;return {id:x.id,user_id:currentUser.id,task_name:x.name||"",category:x.category||null,due_date:due?due.slice(0,10):null,due_time:due.length>=16?due.slice(11,16)+":00":null,priority:x.priority||"normal",notes:x.notes||null,status:x.status||"pending",attachments:files||[],task_data:taskData,created_at:x.createdAt||new Date().toISOString(),updated_at:x.updatedAt||new Date().toISOString()}}
+function fromRemote(row){if(row.task_data&&typeof row.task_data==="object")return {...row.task_data,id:row.id,files:row.attachments||row.task_data.files||[]};let due=row.due_date||"";if(row.due_time)due+="T"+String(row.due_time).slice(0,5);return {id:row.id,name:row.task_name||"",category:row.category||"อื่นๆ",due,priority:row.priority||"normal",notes:row.notes||"",status:row.status||"pending",files:row.attachments||[],createdAt:row.created_at||new Date().toISOString(),updatedAt:row.updated_at||new Date().toISOString(),completedAt:null,history:[]}}
+async function fetchRemoteTasks(){const {data,error}=await sb.from("account_tasks").select("*").eq("user_id",currentUser.id);if(error)throw error;return data||[]}
+async function syncAllTasks(){
+ if(!syncReady||!currentUser||!sb)return;
+ syncQueue=syncQueue.then(async()=>{
+   const ids=new Set(tasks.map(x=>x.id));
+   const rows=tasks.map(remoteRow);
+   if(rows.length){const {error}=await sb.from("account_tasks").upsert(rows,{onConflict:"id"});if(error)throw error}
+   const gone=[...knownRemoteIds].filter(id=>!ids.has(id));
+   if(gone.length){const {error}=await sb.from("account_tasks").delete().eq("user_id",currentUser.id).in("id",gone);if(error)throw error}
+   knownRemoteIds=ids;
+ }).catch(err=>{console.error("Supabase sync error",err);toast("ซิงก์ไม่สำเร็จ: "+(err.message||"โปรดลองอีกครั้ง"))});
+ return syncQueue;
+}
+async function startUserSession(session){
+ currentUser=session?.user||null;
+ if(!currentUser){syncReady=false;showAuth(true);authMessage(configured()?"กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน":"ต้องตั้งค่า URL และ Publishable/anon key ในไฟล์ config.js ก่อน");return}
+ $("accountEmail").textContent=currentUser.email||"เข้าสู่ระบบแล้ว";
+ showAuth(false);
+ try{
+   const remote=await fetchRemoteTasks();
+   knownRemoteIds=new Set(remote.map(r=>r.id));
+   if(remote.length){if(tasks.length){localStorage.setItem("account-checklist-before-sync-backup",JSON.stringify({tasks,settings,lang,backedUpAt:new Date().toISOString()}))}tasks=remote.map(fromRemote);localStorage.setItem(STORE,JSON.stringify(tasks))}
+   else {
+     // First login for this account: import this browser's existing tasks only if remote is empty.
+     const local=tasks.slice();
+     if(local.length){syncReady=true;await syncAllTasks();syncReady=false}
+   }
+   syncReady=true;persist();renderAll();renderReminders();
+ }catch(err){syncReady=false;showAuth(true);authMessage("เชื่อมฐานข้อมูลไม่สำเร็จ: "+(err.message||"ตรวจตารางและการตั้งค่า Supabase"));console.error(err)}
+}
+async function initAuth(){
+ if(!configured()){showAuth(true);authMessage("ก่อนใช้งาน กรุณาใส่ Project URL และ Publishable/anon key ใน config.js");return}
+ if(!window.supabase?.createClient){showAuth(true);authMessage("โหลดไลบรารี Supabase ไม่สำเร็จ กรุณาตรวจการเชื่อมต่ออินเทอร์เน็ต");return}
+ sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+ $("authForm").addEventListener("submit",async e=>{e.preventDefault();authMessage("กำลังเข้าสู่ระบบ…");const {data,error}=await sb.auth.signInWithPassword({email:$("authEmail").value.trim(),password:$("authPassword").value});if(error){authMessage(error.message);return}await startUserSession(data.session)});
+ $("signUpBtn").addEventListener("click",async()=>{authMessage("กำลังสมัครบัญชี…");const {data,error}=await sb.auth.signUp({email:$("authEmail").value.trim(),password:$("authPassword").value});if(error){authMessage(error.message);return}authMessage(data.session?"สมัครสำเร็จ กำลังเข้าสู่ระบบ":"สมัครแล้ว หากระบบขอการยืนยันอีเมล กรุณาเปิดอีเมลยืนยันก่อนเข้าสู่ระบบ")});
+ $("signOutBtn").addEventListener("click",async()=>{syncReady=false;await sb.auth.signOut();currentUser=null;showAuth(true);authMessage("ออกจากระบบแล้ว")});
+ const {data:{session}}=await sb.auth.getSession();
+ if(session)await startUserSession(session);else {showAuth(true);authMessage("เข้าสู่ระบบด้วยอีเมลและรหัสผ่าน")}
+ sb.auth.onAuthStateChange((_event,session)=>{if(!session){currentUser=null;syncReady=false;showAuth(true)}});
+}
 function t(k){return (translations[lang]||translations.th)[k]||translations.th[k]||k}
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2600)}
-function load(){try{tasks=JSON.parse(localStorage.getItem(STORE)||"[]");if(!Array.isArray(tasks))tasks=[]}catch{tasks=[]}try{settings={...settings,...JSON.parse(localStorage.getItem(SETTINGS)||"{}")}}catch{}lang=localStorage.getItem("account-checklist-lang")||"th";applySettings();applyLanguage();renderAll();renderReminders()}
-function persist(){try{localStorage.setItem(STORE,JSON.stringify(tasks));return true}catch(e){toast("Storage full. Remove large attachments or export backup.");return false}}
+function loadLocal(){try{tasks=JSON.parse(localStorage.getItem(STORE)||"[]");if(!Array.isArray(tasks))tasks=[]}catch{tasks=[]}try{settings={...settings,...JSON.parse(localStorage.getItem(SETTINGS)||"{}")}}catch{}if(!Array.isArray(settings.reminders))settings.reminders=[];lang=localStorage.getItem("account-checklist-lang")||"th";applySettings();applyLanguage();renderAll();renderReminders()}
+function persist(){try{localStorage.setItem(STORE,JSON.stringify(tasks));if(syncReady)syncAllTasks();return true}catch(e){toast("Storage full. Remove large attachments or export backup.");return false}}
 function persistSettings(){localStorage.setItem(SETTINGS,JSON.stringify(settings))}
 function applyLanguage(){document.documentElement.lang=lang;document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.dataset.i18n;if(translations[lang][k])el.textContent=translations[lang][k]});document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>el.placeholder=t(el.dataset.i18nPlaceholder));$("language").value=lang;$("language2").value=lang;renderAll();renderReminders()}
 function applySettings(){const r=document.documentElement.style;r.setProperty("--primary",settings.primary);r.setProperty("--appbg",settings.background);r.setProperty("--button",settings.button);r.setProperty("--text",settings.text);r.setProperty("--font-size",settings.fontSize+"px");r.setProperty("--font",settings.font==="system"?"system-ui, sans-serif":'"'+settings.font+'", system-ui, sans-serif');document.body.style.fontFamily="var(--font)";document.body.style.fontSize=settings.fontSize+"px";$("themeName").value=settings.themeName;$("primaryColor").value=settings.primary;$("backgroundColor").value=settings.background;$("buttonColor").value=settings.button;$("textColor").value=settings.text;$("fontSelect").value=settings.font;$("fontSize").value=settings.fontSize;$("fontSizeValue").textContent=settings.fontSize+" px"}
@@ -54,4 +101,4 @@ $("exportPdf").onclick=()=>{if(!selectedStatuses().length){toast(t("emptyExport"
 function download(name,data,type){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("installBtn").hidden=false});$("installBtn").onclick=async()=>{if(!deferredPrompt){toast("Install available when hosted on HTTPS");return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("installBtn").hidden=true};
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-load();
+loadLocal();initAuth();
